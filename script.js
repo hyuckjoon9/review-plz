@@ -1,12 +1,13 @@
-/**
- * PR 리뷰좀요 - Over-the-Top Celebration Engine
- */
-
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('fireworks-canvas');
   const ctx = canvas.getContext('2d');
+
+  // Decoupled DOM Transform Hierarchy
+  const titleWrapper = document.getElementById('title-wrapper');
+  const titleEffects = document.getElementById('title-effects');
   const mainTitle = document.getElementById('main-title');
   const shineText = document.getElementById('shine-text');
+
   const sunburst = document.getElementById('sunburst');
   const shockwave = document.getElementById('shockwave');
   const flashOverlay = document.getElementById('flash-overlay');
@@ -23,11 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let ambientActive = false;
   let timeoutIds = [];
 
-  // Vibrant Palette
+  // Super Vibrant Color Palette
   const COLORS = [
     '#FF3B30', '#FF9500', '#FFCC00', '#34C759',
     '#007AFF', '#5856D6', '#AF52DE', '#FF2D55',
-    '#00C7BE', '#FFD700', '#FF5722', '#00E676'
+    '#00C7BE', '#FFD700', '#FF5722', '#00E676', '#FFFFFF'
   ];
 
   function resizeCanvas() {
@@ -60,9 +61,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Firework Explosion Particle
+   * Fast Glowing Spark Particle (High Speed Line Trails)
    */
-  class Particle {
+  class SparkParticle {
+    constructor(x, y, angleRange = null) {
+      this.x = x;
+      this.y = y;
+
+      const minAngle = angleRange ? angleRange[0] : 0;
+      const maxAngle = angleRange ? angleRange[1] : Math.PI * 2;
+      const angle = minAngle + Math.random() * (maxAngle - minAngle);
+
+      const speed = 14 + Math.random() * 16;
+      this.vx = Math.cos(angle) * speed;
+      this.vy = Math.sin(angle) * speed;
+      this.friction = 0.90 + Math.random() * 0.03;
+      this.gravity = 0.12;
+
+      this.color = Math.random() > 0.3 ? '#FFD700' : '#FFFFFF';
+      this.length = 12 + Math.random() * 16;
+      this.alpha = 1;
+      this.decay = 0.025 + Math.random() * 0.02;
+    }
+
+    update() {
+      this.vx *= this.friction;
+      this.vy *= this.friction;
+      this.vy += this.gravity;
+      this.x += this.vx;
+      this.y += this.vy;
+      this.alpha -= this.decay;
+    }
+
+    draw(context) {
+      if (this.alpha <= 0) return;
+      context.save();
+      context.globalAlpha = Math.max(0, this.alpha);
+      context.strokeStyle = this.color;
+      context.lineWidth = 2.5;
+      context.beginPath();
+      context.moveTo(this.x, this.y);
+      context.lineTo(this.x - this.vx * 1.5, this.y - this.vy * 1.5);
+      context.stroke();
+      context.restore();
+    }
+  }
+
+  /**
+   * Multi-Shape Firework Particle (Star, Circle, Rect, Ribbon)
+   */
+  class FireworkParticle {
     constructor(x, y, shapeType = null, angleRange = null) {
       this.x = x;
       this.y = y;
@@ -71,25 +119,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const maxAngle = angleRange ? angleRange[1] : Math.PI * 2;
       const angle = minAngle + Math.random() * (maxAngle - minAngle);
 
-      const speed = 6 + Math.random() * 14;
+      const speed = 7 + Math.random() * 16;
       this.vx = Math.cos(angle) * speed;
       this.vy = Math.sin(angle) * speed;
 
-      this.friction = 0.94 + Math.random() * 0.02;
-      this.gravity = 0.18 + Math.random() * 0.08;
+      this.friction = 0.93 + Math.random() * 0.03;
+      this.gravity = 0.16 + Math.random() * 0.1;
 
-      this.size = 5 + Math.random() * 8;
+      this.size = 5 + Math.random() * 9;
       this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
 
       const shapes = ['rect', 'circle', 'star', 'ribbon'];
       this.shape = shapeType || shapes[Math.floor(Math.random() * shapes.length)];
 
       this.rotation = Math.random() * Math.PI * 2;
-      this.rotSpeed = (Math.random() - 0.5) * 0.3;
+      this.rotSpeed = (Math.random() - 0.5) * 0.35;
       this.scaleX = 1;
 
       this.alpha = 1;
-      this.decay = 0.01 + Math.random() * 0.008;
+      this.decay = 0.009 + Math.random() * 0.009;
     }
 
     update() {
@@ -116,13 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
       context.fillStyle = this.color;
 
       if (this.shape === 'star') {
-        drawStar(context, this.size * 0.8);
+        drawStar(context, this.size * 0.85);
       } else if (this.shape === 'circle') {
         context.beginPath();
         context.arc(0, 0, this.size / 2, 0, Math.PI * 2);
         context.fill();
       } else if (this.shape === 'ribbon') {
-        context.fillRect(-this.size * 0.8, -this.size * 0.25, this.size * 1.6, this.size * 0.5);
+        context.fillRect(-this.size * 0.9, -this.size * 0.25, this.size * 1.8, this.size * 0.5);
       } else {
         context.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.75);
       }
@@ -139,21 +187,22 @@ document.addEventListener('DOMContentLoaded', () => {
       this.x = fromLeft ? -40 : window.innerWidth + 40;
       this.y = window.innerHeight * 0.3 + Math.random() * (window.innerHeight * 0.4);
 
-      const targetX = window.innerWidth / 2 + (Math.random() - 0.5) * 200;
-      const targetY = window.innerHeight * 0.4;
+      const targetX = window.innerWidth / 2 + (Math.random() - 0.5) * 240;
+      const targetY = window.innerHeight * 0.35;
       const angle = Math.atan2(targetY - this.y, targetX - this.x);
-      const speed = 12 + Math.random() * 8;
+      const speed = 14 + Math.random() * 9;
 
       this.vx = Math.cos(angle) * speed;
-      this.vy = Math.sin(angle) * speed - 4; // slight arc upward
+      this.vy = Math.sin(angle) * speed - 5;
       this.gravity = 0.25;
 
-      this.emoji = Math.random() > 0.3 ? '🎉' : '✨';
-      this.size = 28 + Math.random() * 12;
+      const emojis = ['🎉', '✨', '🏆', '🎆', '🥳'];
+      this.emoji = emojis[Math.floor(Math.random() * emojis.length)];
+      this.size = 30 + Math.random() * 14;
       this.rotation = 0;
-      this.rotSpeed = fromLeft ? 0.15 : -0.15;
+      this.rotSpeed = fromLeft ? 0.16 : -0.16;
       this.alpha = 1;
-      this.decay = 0.012;
+      this.decay = 0.011;
     }
 
     update() {
@@ -188,24 +237,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     reset() {
       this.x = Math.random() * window.innerWidth;
-      this.y = -20 - Math.random() * 100;
-      this.size = 4 + Math.random() * 6;
+      this.y = -20 - Math.random() * 120;
+      this.size = 4.5 + Math.random() * 6.5;
       this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      this.vy = 1.5 + Math.random() * 2.5;
-      this.vx = (Math.random() - 0.5) * 1.5;
+      this.vy = 1.6 + Math.random() * 2.8;
+      this.vx = (Math.random() - 0.5) * 1.8;
       this.rotation = Math.random() * Math.PI * 2;
-      this.rotSpeed = (Math.random() - 0.5) * 0.1;
+      this.rotSpeed = (Math.random() - 0.5) * 0.12;
       this.scaleX = 1;
-      this.opacity = 0.6 + Math.random() * 0.4;
+      this.opacity = 0.65 + Math.random() * 0.35;
     }
 
     update() {
       this.y += this.vy;
-      this.x += Math.sin(this.y * 0.02) * 0.8 + this.vx;
+      this.x += Math.sin(this.y * 0.02) * 0.9 + this.vx;
       this.rotation += this.rotSpeed;
       this.scaleX = Math.cos(this.rotation);
 
-      if (this.y > window.innerHeight + 20) {
+      if (this.y > window.innerHeight + 25) {
         this.reset();
       }
     }
@@ -226,10 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
     constructor() {
       this.x = Math.random() * window.innerWidth;
       this.y = Math.random() * window.innerHeight;
-      this.size = 3 + Math.random() * 5;
+      this.size = 3 + Math.random() * 5.5;
       this.color = '#FFD700';
       this.alpha = Math.random();
-      this.speed = 0.02 + Math.random() * 0.03;
+      this.speed = 0.02 + Math.random() * 0.035;
       this.growing = Math.random() > 0.5;
     }
 
@@ -258,41 +307,49 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Spawn Explosion Burst
+   * Spawn Explosive Firework Burst (Multi-Layered: Sparks + Confetti)
    */
-  function createBurst(x, y, count = 35, spreadType = 'all') {
+  function createBurst(x, y, count = 55, spreadType = 'all') {
     let angleRange = null;
     if (spreadType === 'up') angleRange = [-Math.PI * 0.95, -Math.PI * 0.05];
-    if (spreadType === 'left') angleRange = [-Math.PI * 0.95, -Math.PI * 0.4];
-    if (spreadType === 'right') angleRange = [-Math.PI * 0.6, -Math.PI * 0.05];
+    if (spreadType === 'left') angleRange = [-Math.PI * 0.95, -Math.PI * 0.35];
+    if (spreadType === 'right') angleRange = [-Math.PI * 0.65, -Math.PI * 0.05];
 
-    for (let i = 0; i < count; i++) {
-      particles.push(new Particle(x, y, null, angleRange));
+    // Sparks (Fast line trails)
+    const sparkCount = Math.floor(count * 0.4);
+    for (let i = 0; i < sparkCount; i++) {
+      particles.push(new SparkParticle(x, y, angleRange));
     }
+
+    // Firework Particles (Multi-shaped)
+    for (let i = 0; i < count; i++) {
+      particles.push(new FireworkParticle(x, y, null, angleRange));
+    }
+
     if (!animationFrameId) animate();
   }
 
   /**
-   * Spawn Bottom Mortar Shot
+   * Side Cannon Confetti Blast
    */
-  function launchMortar(targetX, targetY) {
-    const startX = targetX;
-    const startY = window.innerHeight + 10;
-    const count = 28;
+  function launchSideCannon(fromLeft) {
+    const startX = fromLeft ? 0 : window.innerWidth;
+    const startY = window.innerHeight * 0.85;
+    const angleRange = fromLeft ? [-Math.PI * 0.45, -Math.PI * 0.15] : [-Math.PI * 0.85, -Math.PI * 0.55];
 
-    for (let i = 0; i < count; i++) {
-      particles.push(new Particle(startX, startY, null, [-Math.PI * 0.75, -Math.PI * 0.25]));
+    for (let i = 0; i < 40; i++) {
+      particles.push(new FireworkParticle(startX, startY, 'ribbon', angleRange));
     }
     if (!animationFrameId) animate();
   }
 
   /**
-   * Main Render Loop
+   * Render Loop
    */
   function animate() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    // Render Burst Particles & Emojis
+    // Active Burst Particles & Emojis
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.update();
@@ -300,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (p.alpha <= 0) particles.splice(i, 1);
     }
 
-    // Render Ambient Particles
+    // Ambient Falling Confetti & Stars
     if (ambientActive) {
       for (let i = 0; i < ambientParticles.length; i++) {
         ambientParticles[i].update();
@@ -327,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Over-the-Top Sequence Execution
+   * Ultra Celebration Sequence Execution (Isolated Transform Layering)
    */
   function startGrandSequence() {
     clearAllSchedule();
@@ -341,11 +398,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    // Reset UI CSS Classes
+    // Reset UI CSS Classes across decoupled DOM transform layers
     sunburst.classList.remove('active');
     shockwave.classList.remove('active');
     flashOverlay.classList.remove('flash-active');
-    mainTitle.classList.remove('anim-enter', 'anim-shake', 'anim-glow', 'anim-pop', 'anim-float');
+
+    // Layer 1: Wrapper Y-Movement
+    titleWrapper.classList.remove('anim-rise', 'anim-float');
+    // Layer 2: Effects Shake
+    titleEffects.classList.remove('anim-shake');
+    // Layer 3: Title Scale & Glow
+    mainTitle.classList.remove('anim-center', 'anim-scale-top', 'anim-glow', 'anim-pop');
+    // Layer 4: Shine Gradient
     shineText.classList.remove('shine-active');
 
     subtext1.classList.remove('show');
@@ -353,78 +417,82 @@ document.addEventListener('DOMContentLoaded', () => {
     subtext3.classList.remove('show');
     replayBtn.classList.remove('visible');
 
-    // Force DOM Reflow
+    // Force Reflow
     void mainTitle.offsetWidth;
 
-    // 0.4s: Main Title Entrance Bounce Starts
-    scheduleTask(400, () => {
-      mainTitle.classList.add('anim-enter');
+    // 0.3s: Layer 3 (#main-title) Local Center Entrance
+    scheduleTask(300, () => {
+      mainTitle.classList.add('anim-center');
     });
 
-    // 0.8s: Burst 1 (Center Top Firework) + Activate Golden Rays Sunburst
-    scheduleTask(800, () => {
+    // 0.7s: Grand Firework Wave 1 (Center Top & Behind Text Explosions)
+    scheduleTask(700, () => {
       const titleRect = mainTitle.getBoundingClientRect();
       const centerX = titleRect.left + titleRect.width / 2;
-      const topY = titleRect.top - 20;
-
-      sunburst.classList.add('active');
-      createBurst(centerX, topY, 45, 'up');
-    });
-
-    // 1.1s: Burst 2 & 3 (Left & Right Explosions)
-    scheduleTask(1100, () => {
-      const titleRect = mainTitle.getBoundingClientRect();
-      const leftX = Math.max(50, titleRect.left - 60);
-      const rightX = Math.min(window.innerWidth - 50, titleRect.right + 60);
+      const topY = titleRect.top - 25;
       const centerY = titleRect.top + titleRect.height / 2;
 
-      createBurst(leftX, centerY, 40, 'left');
-      createBurst(rightX, centerY, 40, 'right');
+      sunburst.classList.add('active');
+      createBurst(centerX, topY, 60, 'up');
+      createBurst(centerX, centerY, 45, 'all');
     });
 
-    // 1.3s: Shockwave Ring + Screen Flash + Title Glow, Pop Scale, Shake & Shine
+    // 1.1s: Layer 1 (#title-wrapper) IMMEDIATELY Starts Smooth Y-Axis Rise to -24vh
+    //       Layer 3 (#main-title) Smoothly Scales to 0.9 locally
+    scheduleTask(1100, () => {
+      titleWrapper.classList.add('anim-rise');
+      mainTitle.classList.add('anim-scale-top');
+    });
+
+    // 1.3s: Layer 2 (#title-effects) Shake + Layer 3 Glow/Pop + Layer 4 Shine + Cannons
+    // NOTE: #title-wrapper's translateY(-24vh) transition is 100% UNTOUCHED and continues smoothly!
     scheduleTask(1300, () => {
       flashOverlay.classList.add('flash-active');
       shockwave.classList.add('active');
-      mainTitle.classList.add('anim-glow', 'anim-shake', 'anim-pop');
+
+      titleEffects.classList.add('anim-shake');
+      mainTitle.classList.add('anim-glow', 'anim-pop');
       shineText.classList.add('shine-active');
-    });
 
-    // 1.6s: Ambient Confetti Snowfall + Twinkling Stars + Flying Emojis
-    scheduleTask(1600, () => {
-      for (let i = 0; i < 22; i++) ambientParticles.push(new FallingConfetti());
-      for (let i = 0; i < 15; i++) ambientParticles.push(new TwinkleStar());
+      launchSideCannon(true);
+      launchSideCannon(false);
+
+      // Start Ambient Confetti & Twinkling Stars
+      for (let i = 0; i < 26; i++) ambientParticles.push(new FallingConfetti());
+      for (let i = 0; i < 16; i++) ambientParticles.push(new TwinkleStar());
       ambientActive = true;
-
-      // Flying 🎉 Emojis from sides
-      particles.push(new FlyingEmoji(true));
-      particles.push(new FlyingEmoji(false));
-      particles.push(new FlyingEmoji(true));
-      particles.push(new FlyingEmoji(false));
 
       if (!animationFrameId) animate();
     });
 
-    // 2.0s: Cheeky Subtext 1 ("금방 끝나요 ^^") + Bottom Mortar Shot
-    scheduleTask(2000, () => {
+    // 1.7s (60% into #title-wrapper Y-Rise): Subtext 1 ("금방 끝나요 ^^") Overlapping Entrance
+    scheduleTask(1700, () => {
       subtext1.classList.add('show');
-      launchMortar(window.innerWidth * 0.35, window.innerHeight * 0.7);
+      createBurst(window.innerWidth * 0.35, window.innerHeight * 0.65, 30, 'up');
     });
 
-    // 2.7s: Cheeky Subtext 2 ("진짜 별거 없어요") + Bottom Mortar Shot
-    scheduleTask(2700, () => {
+    // 2.1s (#title-wrapper Reaches -24vh Top Position): Subtext 2 ("진짜 별거 없어요") Entrance
+    scheduleTask(2100, () => {
       subtext2.classList.add('show');
-      launchMortar(window.innerWidth * 0.65, window.innerHeight * 0.75);
+      createBurst(window.innerWidth * 0.65, window.innerHeight * 0.72, 30, 'up');
     });
 
-    // 3.4s: Cheeky Subtext 3 ("아마도" - Small & Faint)
-    scheduleTask(3400, () => {
+    // 2.55s: Subtext 3 ("아마도" - Faint, Small & Ultra-Cheeky) Entrance
+    scheduleTask(2550, () => {
       subtext3.classList.add('show');
     });
 
-    // 4.0s+: Final State - Main Title Floating Loop + Replay Button
-    scheduleTask(4000, () => {
-      mainTitle.classList.add('anim-float');
+    // 2.8s: Hilarious Random Delayed Mini Firework Pop! 💥
+    scheduleTask(2800, () => {
+      const popX = window.innerWidth * 0.62;
+      const popY = window.innerHeight * 0.32;
+      createBurst(popX, popY, 28, 'all');
+      particles.push(new FlyingEmoji(true));
+    });
+
+    // 3.2s+: Layer 1 (#title-wrapper) Seamlessly Transitions to Floating Idle Loop at -24vh
+    scheduleTask(3200, () => {
+      titleWrapper.classList.add('anim-float');
       replayBtn.classList.add('visible');
     });
   }
@@ -432,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Trigger Sequence on Load
   startGrandSequence();
 
-  // Replay Triggering
+  // Replay Triggers
   replayBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     startGrandSequence();
@@ -444,4 +512,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
 
