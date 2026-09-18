@@ -1,0 +1,114 @@
+/* Reset & Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #FFFFFF;
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fullscreen Canvas */
+#fireworks-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Centered Container */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  z-index: 20;
+}
+
+/* Intro Text Animation */
+.intro-text {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.03em;
+  text-align: center;
+  user-select: none;
+  cursor: default;
+
+  /* Initial state: below center & transparent */
+  opacity: 0;
+  transform: translateY(45px);
+  will-change: transform, opacity;
+}
+
+/* Animated state */
+.intro-text.animate {
+  animation: smoothRiseFade 1.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smoothRiseFade {
+  0% {
+    opacity: 0;
+    transform: translateY(45px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Replay Button (Minimal Floating UI) */
+#replay-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  background-color: #FFFFFF;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+#replay-btn.visible {
+  opacity: 0.85;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+#replay-btn:hover {
+  opacity: 1;
+  color: #0F172A;
+  border-color: #CBD5E1;
+  background-color: #F8FAFC;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+#replay-btn:active {
+  transform: translateY(0) scale(0.98);
+}
